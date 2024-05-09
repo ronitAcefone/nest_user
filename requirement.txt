@@ -1,0 +1,23 @@
+// Assignment//
+
+// Admin user -> static username and password.(for now). --done
+// Build Authentication functionality (Login, logout); -- login done
+// Use JWT token for authentication -- done
+// Build Autherization functionality to add / update / delete a user. --Done
+// Api to get list of users also (Filtered based on the logged in user) --Done
+// Database -> MongoDb -- Done
+// Create a collection of api's in POSTMAN.
+
+User = {
+    _id,
+    isActive,
+    name,
+    email,
+    password,
+    roles : ["USER_ADD", "USER_UPDATE", "USER_DELETE],
+    createdBy : { type : mongoose.Types.ObjectId, ref :"User"},
+    createdAt,
+    modifiedAt
+}
+
+// Login History.
