@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { CanActivate, ExecutionContext, HttpException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
 import { Observable } from "rxjs";
@@ -11,18 +11,22 @@ export class RoleGuard implements CanActivate {
 
     }
     canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-        const req = context.switchToHttp().getRequest<Request>();
-        if (!req["user"] || !req["user"].roles) {
-            return false;
+        try {
+            const req = context.switchToHttp().getRequest<Request>();
+            if (!req["user"] || !req["user"].roles) {
+                return false;
+            }
+            const allowedRoles = this.reflectors.get(Roles, context.getHandler());
+            const map = {}
+            for (let role of req["user"].roles) {
+                map[role] = 1;
+            }    
+            for (let role of allowedRoles) {
+                if (!map[role]) return false;
+            }
+            return true;
+        } catch (error) {
+            throw new HttpException("Error while validating user access", 500);
         }
-        const allowedRoles = this.reflectors.get(Roles, context.getHandler());
-        const map = {}
-        for (let role of req["user"].roles) {
-            map[role] = 1;
-        }
-        for (let role of allowedRoles) {
-            if (!map[role]) return false;
-        }
-        return true;
     }
 }

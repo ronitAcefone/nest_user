@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { GetUserDto } from './Dto/get_user.dto';
 import { CreateUserDto } from './Dto/create_user.dto';
 import { Model } from "mongoose";
@@ -36,41 +36,60 @@ export class UserService {
 
     }
     getUser(cond: any) {
-        let condition = { ...cond, isActive: true, };
-        console.log("condition : ", condition);
-        return this.userModel.findOne(condition, { username: 1, email: 1, createdBy: 1 , roles: 1}).lean();
-    }
-    async getUserList(condition :any) {
-        const data = await this.userModel.find({...condition , isActive: true});
-        return {
-            success: true,
-            data,
+        try {
+            let condition = { ...cond, isActive: true, };
+            return this.userModel.findOne(condition, { username: 1, email: 1, createdBy: 1, roles: 1 }).lean();
+        } catch (error) {
+            throw new HttpException(error?.message ? error.message : "Error while getting user", error?.status ? error.status : 500);
         }
     }
-    async createUser(userDto: CreateUserDto, createdById : string) {
-        let newUser = new this.userModel({ ...userDto, isActive: true, createdAt: new Date(), createdBy: createdById });
-        const savedUser = await newUser.save();
-        return {
-            success: true,
-            data : savedUser,
-            message : "User created successfully",
+    async getUserList(condition: any) {
+        try {
+            const data = await this.userModel.find({ ...condition, isActive: true });
+            return {
+                success: true,
+                data,
+            }
+        } catch (error) {
+            throw new HttpException(error?.message ? error.message : "Error while getting user list", error?.status ? error.status : 500);
+        }
+    }
+    async createUser(userDto: CreateUserDto, createdById: string) {
+        try {
+            let newUser = new this.userModel({ ...userDto, isActive: true, createdAt: new Date(), createdBy: createdById });
+            const savedUser = await newUser.save();
+            return {
+                success: true,
+                data: savedUser,
+                message: "User created successfully",
+            }
+        } catch (error) {
+            throw new HttpException(error?.message ? error.message : "Error while creating user", error?.status ? error.status : 500);
         }
     }
 
-    async updateUser(id: string, userDto: UpdateUserDto){
-        const updatedUser = await this.userModel.findByIdAndUpdate(id, {$set : {...userDto, modifiedAt : new Date()}}, { new : true});
-        return {
-            success: true,
-            data : updatedUser,
-            message : "User updated successfully",
+    async updateUser(id: string, userDto: UpdateUserDto) {
+        try {
+            const updatedUser = await this.userModel.findByIdAndUpdate(id, { $set: { ...userDto, modifiedAt: new Date() } }, { new: true });
+            return {
+                success: true,
+                data: updatedUser,
+                message: "User updated successfully",
+            }
+        } catch (error) {
+            throw new HttpException(error?.message ? error.message : "Error while updating user", error?.status ? error.status : 500);
         }
     }
 
-    async deleteUser(id: string){
-         await this.userModel.findByIdAndUpdate(id, {$set : {isActive: false, modifiedAt: new Date()}}, { new : true});
-         return {
-            success: true,
-            message : "User deleted successfully",
-         }
+    async deleteUser(id: string) {
+        try {
+            await this.userModel.findByIdAndUpdate(id, { $set: { isActive: false, modifiedAt: new Date() } }, { new: true });
+            return {
+                success: true,
+                message: "User deleted successfully",
+            }
+        } catch (error) {
+            throw new HttpException(error?.message ? error.message : "Error while deleting user", error?.status ? error.status : 500);
+        }
     }
 }
