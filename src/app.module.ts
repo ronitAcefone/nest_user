@@ -7,14 +7,23 @@ import { UserModule } from './user/User.module';
 import { TokenValidator } from './Middleware/token_validator.middleware';
 import { UserController } from './user/User.controller';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [AuthModule, UserModule, MongooseModule.forRoot(process.env.MONGO_URI)],
+  imports: [
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+      isGlobal: true,
+    }),
+    AuthModule,
+    UserModule,
+    MongooseModule.forRoot(process.env.MONGO_URI),
+  ],
   controllers: [AppController],
   providers: [AppService, JwtService],
 })
 export class AppModule {
-  configure(consumer : MiddlewareConsumer){
+  configure(consumer: MiddlewareConsumer) {
     consumer.apply(TokenValidator).forRoutes(UserController);
   }
 }
