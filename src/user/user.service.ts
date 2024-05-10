@@ -1,10 +1,11 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { GetUserDto } from './Dto/get_user.dto';
 import { CreateUserDto } from './Dto/create_user.dto';
 import { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import { User } from 'src/Schema/User';
 import { UpdateUserDto } from './Dto/update_user.dto';
+import { DB } from 'src/MongoDb/functions';
+
 
 
 const users: any = [
@@ -35,17 +36,17 @@ export class UserService {
     constructor(@InjectModel(User.name) private userModel: Model<User>) {
 
     }
-    getUser(cond: any) {
+    async getUser(cond: any) {
         try {
             let condition = { ...cond, isActive: true, };
-            return this.userModel.findOne(condition, { username: 1, email: 1, createdBy: 1, roles: 1 }).lean();
+            return await DB.getSingleData(this.userModel, condition, { username: 1, email: 1, createdBy: 1, roles: 1 }).lean();
         } catch (error) {
             throw new HttpException(error?.message ? error.message : "Error while getting user", error?.status ? error.status : 500);
         }
     }
     async getUserList(condition: any) {
         try {
-            const data = await this.userModel.find({ ...condition, isActive: true });
+            const data = await DB.getData(this.userModel,{ ...condition, isActive: true });
             return {
                 success: true,
                 data,
