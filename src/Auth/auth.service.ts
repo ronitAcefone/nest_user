@@ -11,7 +11,9 @@ export class AuthService {
         return this.userService.getUser(authPayload);
     }
     getToken(user: any) {
-        return this.jwtService.sign(user);
+        return this.jwtService.sign(user,{
+            secret : process.env.SECRET_KEY,
+        });
     }
     validateToken(token: string) {
         const userDecoded = this.jwtService.decode(token);

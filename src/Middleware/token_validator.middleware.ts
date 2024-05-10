@@ -1,21 +1,33 @@
-import { HttpException, Injectable, NestMiddleware } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import { NextFunction, Request, Response } from "express";
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NestMiddleware,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { NextFunction, Request, Response } from 'express';
 
 @Injectable()
 export class TokenValidator implements NestMiddleware {
-    constructor(private jwtService: JwtService) {
-
-    }
-    use(req: Request, res: Response, next: NextFunction) {
+  constructor(private jwtService: JwtService) {}
+  use(req: Request, res: Response, next: NextFunction) {
+    try {
         if (!req.headers.token) {
-            throw new HttpException("Login required", 400);
+          throw new HttpException('Token required', HttpStatus.UNAUTHORIZED);
         }
-        const decoded = this.jwtService.decode(req.headers.token.toString());
-        // const current = new Date().getTime();
-        // console.log("---------->", decoded, current)
-        // if(current > decoded.exp) throw new HttpException("Token expired. Please login again.", 400);
-        req["user"] = decoded;
+        let decoded;
+        try {
+          decoded = this.jwtService.verify(req.headers.token.toString(), {
+            secret: process.env.SECRET_KEY,
+          });
+        } catch (error) {
+          throw new UnauthorizedException("Token expired, login again.");
+        }
+        req['user'] = decoded;
         next();
+    } catch (error) {
+        throw new HttpException(error?.message ? error.message : "Error while validating token", error?.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
 }
