@@ -18,7 +18,7 @@ export class User {
     @Prop()
     roles: [string];
 
-    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref : "User", required: true })
     createdBy: string;
 
     @Prop({ default: new Date() })
