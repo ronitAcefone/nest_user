@@ -13,7 +13,6 @@ export class AuthController {
     @Post("login")
     async login(@Body() authPayload: AuthPayload) {
         const foundUser = await this.authService.validateUser(authPayload);
-        console.log("foundUser : ", foundUser);
         if (!foundUser) throw new HttpException("Invalid username or password", 400);
         const token = this.authService.getToken(foundUser);
         return {

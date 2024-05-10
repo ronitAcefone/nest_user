@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpException,
+  HttpStatus,
   Param,
   Paramtype,
   Post,
@@ -36,8 +37,10 @@ export class UserController {
   @Post('')
   @Roles([AutherizationTypes.USER_ADD])
   @UseGuards(RoleGuard)
-  createUser(@Req() req: Request, @Body() createUserDto: CreateUserDto) {
+  async createUser(@Req() req: Request, @Body() createUserDto: CreateUserDto) {
     try {
+      const foundUser = await this.userService.getUser({username : createUserDto.username});
+      if(foundUser) throw new HttpException("username already exists", HttpStatus.BAD_REQUEST)
       return this.userService.createUser(createUserDto, req['user']._id);
     } catch (error) {
       throw new HttpException(

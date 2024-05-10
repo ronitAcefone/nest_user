@@ -1,6 +1,6 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './Dto/create_user.dto';
-import { Model } from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/Schema/User';
 import { UpdateUserDto } from './Dto/update_user.dto';
@@ -26,7 +26,7 @@ export class UserService {
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while getting user',
-        error?.status ? error.status : 500,
+        error?.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -35,7 +35,7 @@ export class UserService {
       const data = await DB.getData(
         this.userModel,
         { ...condition, isActive: true },
-        { username: 1, email: 1, createdBy: 1 },
+        { username: 1, email: 1, createdBy: 1, roles: 1 },
         [{ path: 'createdBy', select: { username: 1, email: 1 } }],
       );
       return {
@@ -45,20 +45,20 @@ export class UserService {
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while getting user list',
-        error?.status ? error.status : 500,
+        error?.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
   async createUser(userDto: CreateUserDto, createdById: string) {
     try {
-      let newUser = new this.userModel({
+      let savedUser = await DB.saveData(this.userModel, {
         ...userDto,
         isActive: true,
         createdAt: new Date(),
         createdBy: createdById,
       });
-      const savedUser = await newUser.save();
       return {
+        statusCode : HttpStatus.CREATED,
         success: true,
         data: savedUser,
         message: 'User created successfully',
@@ -66,17 +66,17 @@ export class UserService {
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while creating user',
-        error?.status ? error.status : 500,
+        error?.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   async updateUser(id: string, userDto: UpdateUserDto) {
     try {
-      const updatedUser = await this.userModel.findByIdAndUpdate(
-        id,
-        { $set: { ...userDto, modifiedAt: new Date() } },
-        { new: true },
+      const updatedUser = await DB.updateById(
+        this.userModel,
+        new Types.ObjectId(id),
+        { ...userDto, modifiedAt: new Date() },
       );
       return {
         success: true,
@@ -86,18 +86,17 @@ export class UserService {
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while updating user',
-        error?.status ? error.status : 500,
+        error?.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   async deleteUser(id: string) {
     try {
-      await this.userModel.findByIdAndUpdate(
-        id,
-        { $set: { isActive: false, modifiedAt: new Date() } },
-        { new: true },
-      );
+      await DB.updateById(this.userModel, new Types.ObjectId(id), {
+        isActive: false,
+        modifiedAt: new Date(),
+      });
       return {
         success: true,
         message: 'User deleted successfully',
@@ -105,7 +104,7 @@ export class UserService {
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while deleting user',
-        error?.status ? error.status : 500,
+        error?.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
