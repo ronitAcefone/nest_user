@@ -30,18 +30,29 @@ export class UserService {
       );
     }
   }
-  async getUserList(condition: any) {
+  async getUserCount(condition: any) {
     try {
-      const data = await DB.getData(
+      return await DB.getCount(
+        this.userModel,
+        { ...condition, isActive: true }
+      );
+    } catch (error) {
+      throw new HttpException(
+        error?.message ? error.message : 'Error while getting user list',
+        error?.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+  async getUserList(condition: any, skip: number = 0, limit: number = 10) {
+    try {
+      return await DB.getData(
         this.userModel,
         { ...condition, isActive: true },
         { username: 1, email: 1, createdBy: 1, roles: 1 },
+        skip,
+        limit,
         [{ path: 'createdBy', select: { username: 1, email: 1 } }],
       );
-      return {
-        success: true,
-        data,
-      };
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while getting user list',
@@ -51,18 +62,13 @@ export class UserService {
   }
   async createUser(userDto: CreateUserDto, createdById: string) {
     try {
-      let savedUser = await DB.saveData(this.userModel, {
+      return await DB.saveData(this.userModel, {
         ...userDto,
         isActive: true,
         createdAt: new Date(),
         createdBy: createdById,
       });
-      return {
-        statusCode : HttpStatus.CREATED,
-        success: true,
-        data: savedUser,
-        message: 'User created successfully',
-      };
+      
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while creating user',
@@ -73,16 +79,12 @@ export class UserService {
 
   async updateUser(id: string, userDto: UpdateUserDto) {
     try {
-      const updatedUser = await DB.updateById(
+      return await DB.updateById(
         this.userModel,
         new Types.ObjectId(id),
         { ...userDto, modifiedAt: new Date() },
       );
-      return {
-        success: true,
-        data: updatedUser,
-        message: 'User updated successfully',
-      };
+      
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while updating user',
@@ -97,10 +99,6 @@ export class UserService {
         isActive: false,
         modifiedAt: new Date(),
       });
-      return {
-        success: true,
-        message: 'User deleted successfully',
-      };
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while deleting user',

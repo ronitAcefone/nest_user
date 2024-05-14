@@ -7,6 +7,7 @@ import {
   Param,
   Paramtype,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -23,9 +24,23 @@ import { AutherizationTypes } from 'src/Common/Constants';
 export class UserController {
   constructor(private userService: UserService) {}
   @Get('/list')
-  userList(@Req() req: Request) {
+  async userList(@Req() req: Request, @Query() query: any) {
     try {
-      return this.userService.getUserList({ createdBy: req['user']._id });
+      let count = await this.userService.getUserCount({
+        isActive: true,
+        createdBy: req['user']._id,
+      });
+      let data = await this.userService.getUserList(
+        { createdBy: req['user']._id },
+        !isNaN(query.skip) ? parseInt(query.skip) : 0,
+        !isNaN(query.limit) ? parseInt(query.limit) : 0,
+      );
+
+      return {
+        success: true,
+        count,
+        data,
+      };
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while getting user',
@@ -39,9 +54,24 @@ export class UserController {
   @UseGuards(RoleGuard)
   async createUser(@Req() req: Request, @Body() createUserDto: CreateUserDto) {
     try {
-      const foundUser = await this.userService.getUser({username : createUserDto.username});
-      if(foundUser) throw new HttpException("username already exists", HttpStatus.BAD_REQUEST)
-      return this.userService.createUser(createUserDto, req['user']._id);
+      const foundUser = await this.userService.getUser({
+        username: createUserDto.username,
+      });
+      if (foundUser)
+        throw new HttpException(
+          'username already exists',
+          HttpStatus.BAD_REQUEST,
+        );
+      const savedUser = await this.userService.createUser(
+        createUserDto,
+        req['user']._id,
+      );
+      return {
+        statusCode: HttpStatus.CREATED,
+        success: true,
+        data: savedUser,
+        message: 'User created successfully',
+      };
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while creating user',
@@ -66,7 +96,12 @@ export class UserController {
         createdBy: req['user']._id,
       });
       if (!foundUser) throw new HttpException('User not found', 404);
-      return this.userService.updateUser(id, updateUserDto);
+      const updatedUser = await this.userService.updateUser(id, updateUserDto);
+      return {
+        success: true,
+        data: updatedUser,
+        message: 'User updated successfully',
+      };
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while updating user',
@@ -87,7 +122,11 @@ export class UserController {
         createdBy: req['user']._id,
       });
       if (!foundUser) throw new HttpException('User not found', 404);
-      return this.userService.deleteUser(id);
+      await this.userService.deleteUser(id);
+      return {
+        success: true,
+        message: 'User deleted successfully',
+      };
     } catch (error) {
       throw new HttpException(
         error?.message ? error.message : 'Error while delete user',

@@ -13,14 +13,26 @@ class MongoFunctions {
       throw Error(error.message);
     }
   }
+  getCount(
+    model: Model<any>,
+    condition: any = {},
+  ) {
+    try {
+      return model.countDocuments(condition);
+    } catch (error) {
+      throw Error(error.message);
+    }
+  }
   getData(
     model: Model<any>,
     condition: any = {},
     fields: any = {},
+    skip : number = 0,
+    limit : number = 0,
     populateArr: any = [],
   ) {
     try {
-      return model.find(condition, fields).populate(populateArr).lean();
+      return model.find(condition, fields).skip(skip).limit(limit).populate(populateArr).lean();
     } catch (error) {
       throw Error(error.message);
     }
